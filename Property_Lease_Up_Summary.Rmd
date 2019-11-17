@@ -1,0 +1,222 @@
+---
+title: "Property Lease-Up Summary"
+output: html_notebook
+---
+
+```{r}
+library(readxl)
+# load the data
+info_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Rent', range = 'A5:AD851')
+asking_rent_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Rent', range = 'AE5:FL851')
+rownames(asking_rent_1) = info_1$ProjID
+effective_rent_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Rent', range = 'FM5:KT851')
+rownames(effective_rent_1) = info_1$ProjID
+eff_rnt_per_sq_ft_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Rent', range = 'KU5:QB851')
+rownames(eff_rnt_per_sq_ft_1) = info_1$ProjID
+occupancy_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Occ & Concession', range = 'AE5:FL851')
+rownames(occupancy_1) = info_1$ProjID
+concession_value_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Occ & Concession', range = 'FM5:KT851')
+rownames(concession_value_1) = info_1$ProjID
+concession_percent_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Occ & Concession', range = 'KU5:QB851')
+rownames(concession_percent_1) = info_1$ProjID
+property_submarket_grade_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Asset Class', range = 'AE5:FL851')
+rownames(property_submarket_grade_1) = info_1$ProjID
+property_market_grade_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Asset Class', range = 'FM5:KT851')
+rownames(property_market_grade_1) = info_1$ProjID
+submarket_grade_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Asset Class', range = 'KU5:QB851')
+rownames(submarket_grade_1) = info_1$ProjID
+property_status_1 = read_excel(path = '~/Documents/Job Application/USAA/MSA1.xlsx', sheet = 'Property Status', range = 'AE5:FL851')
+rownames(property_status_1) = info_1$ProjID
+
+info_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Rent', range = 'A5:AD104')
+asking_rent_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Rent', range = 'AE5:FL104')
+rownames(asking_rent_2) = info_2$ProjID
+effective_rent_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Rent', range = 'FM5:KT104')
+rownames(effective_rent_2) = info_2$ProjID
+eff_rnt_per_sq_ft_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Rent', range = 'KU5:QB104')
+rownames(eff_rnt_per_sq_ft_2) = info_2$ProjID
+occupancy_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Occ & Concession', range = 'AE5:FL104')
+rownames(occupancy_2) = info_2$ProjID
+concession_value_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Occ & Concession', range = 'FM5:KT104')
+rownames(concession_value_2) = info_2$ProjID
+concession_percent_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Occ & Concession', range = 'KU5:QB104')
+rownames(concession_percent_2) = info_2$ProjID
+property_submarket_grade_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Asset Class', range = 'AE5:FL104')
+rownames(property_submarket_grade_2) = info_2$ProjID
+property_market_grade_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Asset Class', range = 'FM5:KT104')
+rownames(property_market_grade_2) = info_2$ProjID
+submarket_grade_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Asset Class', range = 'KU5:QB104')
+rownames(submarket_grade_2) = info_2$ProjID
+property_status_2 = read_excel(path = '~/Documents/Job Application/USAA/MSA2.xlsx', sheet = 'Property Status', range = 'AE5:FL104')
+rownames(property_status_2) = info_2$ProjID
+```
+
+## Number of Properties Delivered Since April 2008 by Markets
+
+```{r}
+# Number of properties delivered since April 2008
+sprintf('There are %i properties are delivered since April 2008 in %s.', sum(apply(property_status_1, 1, function(x) na.omit(x)[1]) %in% c('LU', 'UC/LU')), unique(info_1$MarketName))
+sprintf('There are %i properties are delivered since April 2008 in %s.', sum(apply(property_status_2, 1, function(x) na.omit(x)[1]) %in% c('LU', 'UC/LU')), unique(info_2$MarketName))
+```
+
+## Average Lease-Up Time by Markets
+
+```{r}
+# Average lease-up time
+delivered_1 <- info_1$ProjID[apply(property_status_1, 1, function(x) na.omit(x)[1]) %in% c('LU', 'UC/LU')]
+delivered_2 <- info_2$ProjID[apply(property_status_2, 1, function(x) na.omit(x)[1]) %in% c('LU', 'UC/LU')]
+
+lease_up_time <- function(l){
+  i <- 0
+  while(l[[i+1]] < 0.9){
+    i = i + 1
+    if (i == length(l)) {
+      break
+    }
+  }
+  return(i)
+}
+
+lease_up_time_1 <- as.numeric(lapply(apply(occupancy_1[rownames(occupancy_1) %in% delivered_1,], 1, function(x) na.omit(x)), lease_up_time))
+lease_up_time_2 <- as.numeric(lapply(apply(occupancy_2[rownames(occupancy_2) %in% delivered_2,], 1, function(x) na.omit(x)), lease_up_time))
+
+sprintf('The average lease-up time is %.2f months in %s.', mean(lease_up_time_1), unique(info_1$MarketName))
+sprintf('The average lease-up time is %.2f months in %s.', mean(lease_up_time_2), unique(info_2$MarketName))
+```
+
+## Price by Markets
+
+```{r}
+# Effective rent per square feet in Texas
+library(dplyr)
+library(data.table)
+library(ggplot2)
+
+eff_rnt_per_sq_ft_1_by_submarket = merge(info_1, eff_rnt_per_sq_ft_1, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+erps_1 <- ggplot(data = melt(eff_rnt_per_sq_ft_1_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Effective Rent per Square in Texas by Submarkets', y = 'Rent per Square') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+erps_1
+```
+
+In Austin-Round Rock, Texas, submarket Downtown/University has the highest effective rent per square, which is around 50% higher than the average effective rent per sqaure. Also, the effective rent per square in submarket South Austin increases fastest in recent years. 
+
+```{r}
+library(forecast)
+price_time_series_1 <- ts(as.numeric(apply(eff_rnt_per_sq_ft_1_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(price_time_series_1)
+price_decomp_1 <- decompose(price_time_series_1)
+# plot(price_decomp_1$seasonal[10:21], type = 'l', xlab='Months', ylab='Seasonality', main = 'Seasonality of Effective Rent per Sqaure in Texas in Decomposition')
+plot(price_decomp_1)
+```
+
+In Austin-Round Rock, Texas, if renting apartments during Christimas, renters can save around $0.02 per square monthly comparing to renting during Summer Break (such as July, August, September). Also, the effective price per square went down during 2008 to 2010, then it went up after 2010, and it went up around 5% yearly.
+
+
+```{r}
+# Effective rent per square feet in Ohio
+eff_rnt_per_sq_ft_2_by_submarket = merge(info_2, eff_rnt_per_sq_ft_2, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+erps_2 <- ggplot(data = melt(eff_rnt_per_sq_ft_2_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Effective Rent per Square in Ohio by Submarkets', y = 'Rent per Square') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+erps_2
+```
+
+In Akron, OH, submarket Kent/Portage County has the highest effective price per square and submarket South Summit County has the lowest effective price per square. Effective price per square in Kent/Portage County is around 10% higher than North Summit County, and effective price per square in North Summit County is also 10% higher than South Summit County. All three counties have similar effective price per square inflation rates from 2008 to 2019.
+
+
+```{r}
+price_time_series_2 <- ts(as.numeric(apply(eff_rnt_per_sq_ft_2_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(price_time_series_2)
+plot(decompose(price_time_series_2))
+```
+
+In Akron, OH, effective price per square shows similar patterns as in Austin-Round Rock, Texas. Effective price per square went down before 2010 then up after 2010 except the yearly inflation rate is around 3%. It also shows lower effective price per square during Christmas comparing to Summer Break.
+
+# Occupancy by Markets
+
+```{r}
+# Occupancy Rate in Texas
+occupancy_1_by_submarket = merge(info_1, occupancy_1, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+occupancy_1 <- ggplot(data = melt(occupancy_1_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Occupancy % in Texas by Submarkets', y = 'Percentage') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+occupancy_1
+```
+
+In Austin-Round Rock, Texas, East Austin has low occupancy rate during 2008 and Downtown/University has low occupancy rate during 2016. And the average occupancy rate is between 90%-95%. 
+
+```{r}
+occupancy_time_series_1 <- ts(as.numeric(apply(occupancy_1_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(occupancy_time_series_1)
+occupancy_decomp_1 <- decompose(occupancy_time_series_1)
+plot(occupancy_decomp_1)
+```
+
+In Austin-Round Rock, Texas, the average occupancy rate is lower during Christimas Break comparing to Summer Break. And the average occupancy rate went up from 2009 to 2011, then went down after 2011 until 2018, then went up again after 2018. Average occupancy rate is around 92%.
+
+```{r}
+# Occupancy Rate in Ohio
+occupancy_2_by_submarket = merge(info_2, occupancy_2, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+occupancy_2 <- ggplot(data = melt(occupancy_2_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Occupancy % in Ohio by Submarkets', y = 'Percentage') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+occupancy_2
+```
+
+In Akron, OH, occupancy rate in South Summit County is generally lower to occupancy rate in Kent/Portage County and North Summit County. And Sounth Summit County has lowest occupancy rate during 2008, which drops to 85%.
+
+```{r}
+occupancy_time_series_2 <- ts(as.numeric(apply(occupancy_2_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(occupancy_time_series_2)
+occupancy_decomp_2 <- decompose(occupancy_time_series_2)
+plot(occupancy_decomp_2)
+```
+
+In Akron, OH, the average occupancy rate is also lowest during Christimas Break, but in Summer Break, it is not the highest. It has the highest occupancy rate in June, then drops in July, August, September, and rises again in October. Average occupancy rate fluctuates druing 2008 and 2019, which is lowest in 2010 and highest in 2015. Average occupancy rate is around 95%.
+
+## Concession by Markets
+
+```{r}
+# Concession percent in Texas
+concession_percent_1_by_submarket = merge(info_1, concession_percent_1, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+cp_1 <- ggplot(data = melt(concession_percent_1_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Concession % in Texas by Submarkets', y = 'Percentage') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+cp_1
+```
+
+In Austin-Round Rock, Texas, submarket Far West Austin provides highest concession percentage during 2010, which is around 15%. And overall concession percentage is higher between 2008 to 2010 comparing to other time periods.
+
+```{r}
+concession_time_series_1 <- ts(as.numeric(apply(concession_percent_1_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(concession_time_series_1)
+concession_decomp_1 <- decompose(concession_time_series_1)
+plot(concession_decomp_1)
+```
+
+In Austin-Round Rock, Texas, concession percentage is generally higher in Christmas Break comparing to Summer Break. And average concession percentage is highest in 2010, whcih is around 7%, and generally, it is around 1%.
+
+```{r}
+# Concession percent in Ohio
+concession_percent_2_by_submarket = merge(info_2, concession_percent_2, by.y = 0, by.x = 'ProjID') %>% select('Submarket', c(31:168)) %>% group_by(Submarket) %>% summarise_all(mean, na.rm = TRUE)
+cp_2 <- ggplot(data = melt(concession_percent_2_by_submarket, id.vars = 'Submarket'), aes(x = variable, y = value, group = Submarket)) + geom_line(aes(colour=Submarket, group=Submarket)) + labs(title = 'Concession % in Ohio by Submarkets', y = 'Percentage') + theme_classic() + scale_x_discrete(name = 'Year', breaks = c('Jan-09', 'Jan-10', 'Jan-11', 'Jan-12', 'Jan-13', 'Jan-14', 'Jan-15', 'Jan-16', 'Jan-17', 'Jan-18', 'Jan-19'))
+cp_2
+```
+
+In Akron, OH, the concession percentage is generally higher in South Summit County comparing to the other two counties. Concession percentage is highest in 2010, which is around 8% in South Summit County.
+
+```{r}
+concession_time_series_2 <- ts(as.numeric(apply(concession_percent_2_by_submarket[,c(2:139)], 2, mean)), frequency = 12, start = c(2008, 4))
+plot.ts(concession_time_series_2)
+concession_decomp_2 <- decompose(concession_time_series_2)
+plot(concession_decomp_2)
+```
+
+In Akron, OH, within a year, concession percentage is highest during Christmas Break but lowest in October, and the concession percentage drops consistly from Febrary to October. The average concession percentage is highest in 2010, around 4%, and in general, it is around 1%.
+
+## Summary
+
+In high-level summary, markets in both Texas and Ohio are pessimistic in 2008-2010, which result the low effective price per square, low occupancy rate, and high concession percentage. And after 2010, the markets in both Texas and Ohio get better and better, which results increasing effective price per sqaure, decreasing occupancy rates, and decreasing concession percentages. Within a year, markets perform worse in Christmas Break than Summer Break, so there are higher concession percentages in Christmas Break.
+
+In Austin-Round Rock, Texas, Downtown/University is the most expensive submarket, which is around 50% higher in terms of effective price per sqaure. Average effective price per sqaure in Austin-Round Rock, Texas is around \$1.5 in September 2019. In Akron, OH, Kent/Portage County is the most expensive submarket, which is around 10% higher in terms of effective price per square. Average effective price per square in Akron, OH is around \$1.0 in September, 2019.
+
+The average concession percentage is around 1% in both Texas and Ohio market, and the average occupancy rate is around 92% in Texas and 95% in Ohio.
+
+In this analysis, I implement uniform weights to calcalute averages for simplicity. However, the analysis could be more accurate if we calculate average effective price per square weighted by total squares (Quantity\*AreaPerUnit), average occupancy rate weighted by Quantity, and average concession percentage weighted by monthly total asking price of available units in building ((1-Occupancy_rate)\*Quantity\*asking_rent).
+
+Also, if I have more time, I will analyze management companies in markets. For example, which management companies manage luxury building? Which management companies are the most popular ones in markets? Which management companies have the largest assets? And which management companies have the best grades in markets?
+
+
+
+

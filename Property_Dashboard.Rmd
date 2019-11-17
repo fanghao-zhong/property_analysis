@@ -1,0 +1,139 @@
+---
+title: "Property Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{r global, include=FALSE}
+library(dplyr)
+library(leaflet)
+library(readxl)
+# load the data
+info_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Rent', range = 'A5:AD851')
+asking_rent_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Rent', range = 'AE5:FL851')
+rownames(asking_rent_1) = info_1$ProjID
+effective_rent_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Rent', range = 'FM5:KT851')
+rownames(effective_rent_1) = info_1$ProjID
+eff_rnt_per_sq_ft_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Rent', range = 'KU5:QB851')
+rownames(eff_rnt_per_sq_ft_1) = info_1$ProjID
+occupancy_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Occ & Concession', range = 'AE5:FL851')
+rownames(occupancy_1) = info_1$ProjID
+concession_value_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Occ & Concession', range = 'FM5:KT851')
+rownames(concession_value_1) = info_1$ProjID
+concession_percent_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Occ & Concession', range = 'KU5:QB851')
+rownames(concession_percent_1) = info_1$ProjID
+property_submarket_grade_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Asset Class', range = 'AE5:FL851')
+rownames(property_submarket_grade_1) = info_1$ProjID
+property_market_grade_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Asset Class', range = 'FM5:KT851')
+rownames(property_market_grade_1) = info_1$ProjID
+submarket_grade_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Asset Class', range = 'KU5:QB851')
+rownames(submarket_grade_1) = info_1$ProjID
+property_status_1 = read_excel(path = 'MSA1.xlsx', sheet = 'Property Status', range = 'AE5:FL851')
+rownames(property_status_1) = info_1$ProjID
+
+info_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Rent', range = 'A5:AD104')
+asking_rent_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Rent', range = 'AE5:FL104')
+rownames(asking_rent_2) = info_2$ProjID
+effective_rent_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Rent', range = 'FM5:KT104')
+rownames(effective_rent_2) = info_2$ProjID
+eff_rnt_per_sq_ft_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Rent', range = 'KU5:QB104')
+rownames(eff_rnt_per_sq_ft_2) = info_2$ProjID
+occupancy_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Occ & Concession', range = 'AE5:FL104')
+rownames(occupancy_2) = info_2$ProjID
+concession_value_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Occ & Concession', range = 'FM5:KT104')
+rownames(concession_value_2) = info_2$ProjID
+concession_percent_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Occ & Concession', range = 'KU5:QB104')
+rownames(concession_percent_2) = info_2$ProjID
+property_submarket_grade_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Asset Class', range = 'AE5:FL104')
+rownames(property_submarket_grade_2) = info_2$ProjID
+property_market_grade_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Asset Class', range = 'FM5:KT104')
+rownames(property_market_grade_2) = info_2$ProjID
+submarket_grade_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Asset Class', range = 'KU5:QB104')
+rownames(submarket_grade_2) = info_2$ProjID
+property_status_2 = read_excel(path = 'MSA2.xlsx', sheet = 'Property Status', range = 'AE5:FL104')
+rownames(property_status_2) = info_2$ProjID
+
+
+
+```
+
+
+Properties
+=======================================================================
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r sidebar}
+selectInput('state', label = 'Market State', choices = c('Texas', 'Ohio'), selected = 'Ohio')
+textInput('zipcode', label = 'Zip Code', value = '')
+selectInput('submarket', label = 'Submarket', choices = c('ALL', sort(unique(c(info_1$Submarket, info_2$Submarket)))), selected = 'ALL')
+sliderInput('price', label = 'Price', 0, 4500, c(0, 4500))
+selectInput('management', label = 'Management Company', choices = c('ALL', sort(unique(c(info_1$ManagementCompany, info_2$ManagementCompany)))), selected = 'ALL')
+sliderInput('year', label = 'Building Built Between', 1900, 2020, c(1900, 2020))
+checkboxInput('avai', label = 'Have Available Units')
+```
+
+
+Column
+-----------------------------------------------------------------------
+
+### Property Information
+
+```{r}
+renderLeaflet({
+  library(htmltools)
+  if (input$state == 'Texas'){
+    labs <- lapply(seq(nrow(info_1)), function(i) {
+      paste0( '<h><b>', info_1[i, "Name"], '</b></h>',
+              '<br>', info_1[i, "Address"], ', ', info_1[i, "City"], ', ', info_1[i, "State"],  '</br>',
+              '<h>', 'Submarket: ', info_1[i, "Submarket"], '</h>', 
+              '<br>', 'Management Company: ', info_1[i, "ManagementCompany"], '</br>', 
+              '<h>', 'Year Built: ', info_1[i, "YearBuilt"], '</h>',
+              '<br>', 'Last Rehabilitation: ', ifelse(max(info_1[i, c("Rehab1", "Rehab2", "Rehab3")], na.rm = TRUE) == -Inf, NA, max(info_1[i, c("Rehab1", "Rehab2", "Rehab3")], na.rm = TRUE)), '</br>',
+              '<h>', 'Level: ', info_1[i, "Level"], '</h>',
+              '<br>', 'Quantity: ', info_1[i, "Quantity"], '</br>',
+              '<h>', 'Area Per Unit: ', info_1[i, "AreaPerUnit"], '</h>',
+              '<br>', 'Approximate Monthly Price: $', effective_rent_1[i, "Sep-19"], '</br>',
+              '<h>', '# of Available Units: ', floor(info_1[i, "Quantity"]*(1-occupancy_1[i, "Sep-19"])), '<h>',
+              '<br>', 'Market Grade: ', property_market_grade_1[i, "Sep-19"], '</br>'
+              ) 
+      })
+    
+    eval(parse(text = paste0('dat <- info_1[(apply(effective_rent_1[, "Sep-19"], 2, function(x) (x>=input$price[1])&(x<=input$price[2])))', ifelse(input$avai, '&(floor(info_1[, "Quantity"]*(1-occupancy_1[, "Sep-19"])) >= 1)', ''), ',]', ifelse(input$zipcode != '', ' %>% filter(Zip == input$zipcode)', ''), ifelse(input$submarket != 'ALL', ' %>% filter(Submarket == input$submarket)', ''), ifelse(input$management != 'ALL', ' %>% filter(ManagementCompany == input$management)', ''), ' %>% filter((YearBuilt >= input$year[1])&(YearBuilt <= input$year[2]))')))
+    
+    eval(parse(text = paste0('leaflet(data = dat) %>% addTiles() %>% addMarkers(lng = ~Longitude, lat = ~Latitude, label = lapply(labs[match(dat$ProjID, info_1$ProjID)], HTML))')))
+
+  } else {
+    labs <- lapply(seq(nrow(info_2)), function(i) {
+      paste0( '<h><b>', info_2[i, "Name"], '</b></h>',
+              '<br>', info_2[i, "Address"], ', ', info_2[i, "City"], ', ', info_2[i, "State"],  '</br>',
+              '<h>', 'Submarket: ', info_2[i, "Submarket"], '</h>', 
+              '<br>', 'Management Company: ', info_2[i, "ManagementCompany"], '</br>', 
+              '<h>', 'Year Built: ', info_2[i, "YearBuilt"], '</h>',
+              '<br>', 'Last Rehabilitation: ', ifelse(max(info_2[i, c("Rehab1", "Rehab2", "Rehab3")], na.rm = TRUE) == -Inf, NA, max(info_2[i, c("Rehab1", "Rehab2", "Rehab3")], na.rm = TRUE)), '</br>',
+              '<h>', 'Level: ', info_2[i, "Level"], '</h>',
+              '<br>', 'Quantity: ', info_2[i, "Quantity"], '</br>',
+              '<h>', 'Area Per Unit: ', info_2[i, "AreaPerUnit"], '</h>',
+              '<br>', 'Approximate Monthly Price: $', effective_rent_2[i, "Sep-19"], '</br>',
+              '<h>', '# of Available Units: ', floor(info_2[i, "Quantity"]*(1-occupancy_2[i, "Sep-19"])), '<h>',
+              '<br>', 'Market Grade: ', property_market_grade_2[i, "Sep-19"], '</br>'
+              ) 
+      })
+
+    eval(parse(text = paste0('dat <- info_2[(apply(effective_rent_2[, "Sep-19"], 2, function(x) (x>=input$price[1])&(x<=input$price[2])))', ifelse(input$avai, '&(floor(info_2[, "Quantity"]*(1-occupancy_2[, "Sep-19"])) >= 1)', ''), ',]', ifelse(input$zipcode != '', ' %>% filter(Zip == input$zipcode)', ''), ifelse(input$submarket != 'ALL', ' %>% filter(Submarket == input$submarket)', ''), ifelse(input$management != 'ALL', ' %>% filter(ManagementCompany == input$management)', ''), ' %>% filter((YearBuilt >= input$year[1])&(YearBuilt <= input$year[2]))')))
+    
+    eval(parse(text = paste0('leaflet(data = dat) %>% addTiles() %>% addMarkers(lng = ~Longitude, lat = ~Latitude, label = lapply(labs[match(dat$ProjID, info_2$ProjID)], HTML))')))
+    
+  }
+})
+```
+
+
